@@ -10,7 +10,7 @@ database:
   dbname: "chatter"
 
 jwt:
-  secret: "your-secret-key-here"
+  secret: "multi-agent-chatter-secret-key-2024"
   expires_in: 24  # hours
 
 ai:

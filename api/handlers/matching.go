@@ -16,8 +16,6 @@ var waitingUsers = make(map[uint]*models.MatchingRequest)
 // RequestMatching 请求匹配
 func RequestMatching(c *gin.Context) {
 	userID, _ := c.Get("userID")
-	user, _ := c.Get("user")
-	currentUser := user.(models.User)
 
 	var req models.MatchingRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -32,7 +30,7 @@ func RequestMatching(c *gin.Context) {
 	matched := false
 	var matchedUserID uint
 
-	for id, matchReq := range waitingUsers {
+	for id := range waitingUsers {
 		if id == userID.(uint) {
 			continue // 跳过自己
 		}
@@ -122,5 +120,42 @@ func CancelMatching(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{
 		"message": "匹配已取消",
+	})
+}
+
+// GetMatchingStatus 获取匹配状态
+func GetMatchingStatus(c *gin.Context) {
+	userID, _ := c.Get("userID")
+
+	// 检查用户是否在等待队列中
+	_, isWaiting := waitingUsers[userID.(uint)]
+
+	if isWaiting {
+		c.JSON(http.StatusOK, gin.H{
+			"status":  "waiting",
+			"message": "正在等待匹配...",
+		})
+		return
+	}
+
+	// 检查是否已经匹配成功（查找最近的陌生人聊天会话）
+	var session models.ChatSession
+	err := database.DB.Where("user_id = ? AND type = ? AND created_at > ?",
+		userID, models.SessionStranger, time.Now().Add(-5*time.Minute)).
+		Order("created_at DESC").
+		First(&session).Error
+
+	if err == nil {
+		c.JSON(http.StatusOK, gin.H{
+			"status":    "matched",
+			"sessionId": session.ID,
+			"message":   "匹配成功",
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"status":  "idle",
+		"message": "当前未在匹配中",
 	})
 }

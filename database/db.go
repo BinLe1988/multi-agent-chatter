@@ -15,10 +15,11 @@ import (
 var DB *gorm.DB
 
 // Initialize 初始化数据库连接
-func Initialize(dbConfig configs.Database) error {
+func Initialize(cfg *configs.Config) error {
 	var dsn string
 	var dialector gorm.Dialector
 
+	dbConfig := cfg.Database
 	switch dbConfig.Driver {
 	case "mysql":
 		dsn = fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?charset=utf8mb4&parseTime=True&loc=Local",
@@ -41,9 +42,9 @@ func Initialize(dbConfig configs.Database) error {
 	// 自动迁移数据库表
 	err = DB.AutoMigrate(
 		&models.User{},
-		&models.ChatMessage{},
-		&models.Payment{},
 		&models.ChatSession{},
+		&models.Payment{},
+		&models.ChatMessage{},
 	)
 	if err != nil {
 		return err

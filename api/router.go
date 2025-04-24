@@ -4,11 +4,21 @@ import (
 	"github.com/BinLe1988/multi-agent-chatter/api/handlers"
 	"github.com/BinLe1988/multi-agent-chatter/api/middleware"
 
+	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 )
 
 // SetupRouter 设置API路由
 func SetupRouter(router *gin.Engine) {
+	// 配置CORS
+	config := cors.DefaultConfig()
+	config.AllowOrigins = []string{"http://localhost:3000"}
+	config.AllowMethods = []string{"GET", "POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS"}
+	config.AllowHeaders = []string{"Origin", "Content-Length", "Content-Type", "Authorization"}
+	config.AllowCredentials = true
+
+	router.Use(cors.New(config))
+
 	// 公共API
 	public := router.Group("/api")
 	{
@@ -47,6 +57,7 @@ func SetupRouter(router *gin.Engine) {
 
 		// 匹配相关
 		authorized.POST("/matching", handlers.RequestMatching)
+		authorized.GET("/matching/status", handlers.GetMatchingStatus)
 		authorized.DELETE("/matching", handlers.CancelMatching)
 	}
 }

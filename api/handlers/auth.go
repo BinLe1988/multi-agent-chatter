@@ -117,7 +117,8 @@ func GetCurrentUser(c *gin.Context) {
 		return
 	}
 
+	userObj := user.(models.User)
 	c.JSON(http.StatusOK, gin.H{
-		"user": user.(models.User).ToResponse(),
+		"user": (&userObj).ToResponse(),
 	})
 }

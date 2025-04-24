@@ -16,9 +16,10 @@ var (
 )
 
 // 初始化AI配置
-func InitConfig(cfg configs.AI) {
-	apiKey = cfg.APIKey
-	model = cfg.Model
+func InitConfig(cfg *configs.Config) {
+	ai := cfg.AI
+	apiKey = ai.APIKey
+	model = ai.Model
 }
 
 // 请求结构体

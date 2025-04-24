@@ -14,9 +14,9 @@ var jwtSecret string
 var jwtExpiration int
 
 // 初始化JWT配置
-func InitJWT(cfg configs.JWT) {
-	jwtSecret = cfg.Secret
-	jwtExpiration = cfg.ExpiresIn
+func InitJWT(cfg *configs.Config) {
+	jwtSecret = cfg.JWT.Secret
+	jwtExpiration = cfg.JWT.ExpiresIn
 }
 
 // Claims JWT声明

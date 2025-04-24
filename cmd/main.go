@@ -6,6 +6,7 @@ import (
 	"github.com/BinLe1988/multi-agent-chatter/api"
 	"github.com/BinLe1988/multi-agent-chatter/configs"
 	"github.com/BinLe1988/multi-agent-chatter/database"
+	"github.com/BinLe1988/multi-agent-chatter/pkg/utils"
 
 	"github.com/gin-gonic/gin"
 )
@@ -17,8 +18,11 @@ func main() {
 		log.Fatalf("Failed to load config: %v", err)
 	}
 
+	// 初始化JWT
+	utils.InitJWT(cfg)
+
 	// 初始化数据库连接
-	if err := database.Initialize(cfg.Database); err != nil {
+	if err := database.Initialize(cfg); err != nil {
 		log.Fatalf("Failed to initialize database: %v", err)
 	}
 	defer database.Close()
