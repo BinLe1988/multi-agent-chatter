@@ -1,0 +1,18 @@
+server:
+  port: "8080"
+
+database:
+  driver: "mysql"
+  host: "localhost"
+  port: "3306"
+  user: "root"
+  password: "123456"
+  dbname: "chatter"
+
+jwt:
+  secret: "your-secret-key-here"
+  expires_in: 24  # hours
+
+ai:
+  api_key: "your-openai-api-key-here"
+  model: "gpt-4" 

@@ -1,0 +1,36 @@
+package main
+
+import (
+	"log"
+	"multi-agent-chatter/api"
+	"multi-agent-chatter/config"
+	"multi-agent-chatter/database"
+
+	"github.com/gin-gonic/gin"
+)
+
+func main() {
+	// 加载配置
+	cfg, err := config.Load()
+	if err != nil {
+		log.Fatalf("Failed to load config: %v", err)
+	}
+
+	// 初始化数据库连接
+	if err := database.Initialize(cfg.Database); err != nil {
+		log.Fatalf("Failed to initialize database: %v", err)
+	}
+	defer database.Close()
+
+	// 创建Gin实例
+	router := gin.Default()
+
+	// 设置路由
+	api.SetupRouter(router)
+
+	// 启动服务器
+	log.Printf("Server starting on port %s", cfg.Server.Port)
+	if err := router.Run(":" + cfg.Server.Port); err != nil {
+		log.Fatalf("Failed to start server: %v", err)
+	}
+}
