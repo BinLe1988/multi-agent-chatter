@@ -1,8 +1,8 @@
 package api
 
 import (
-	"multi-agent-chatter/api/handlers"
-	"multi-agent-chatter/api/middleware"
+	"github.com/BinLe1988/multi-agent-chatter/api/handlers"
+	"github.com/BinLe1988/multi-agent-chatter/api/middleware"
 
 	"github.com/gin-gonic/gin"
 )

@@ -1,6 +1,9 @@
-module multi-agent-chatter
+module github.com/BinLe1988/multi-agent-chatter
 
 go 1.19
+
+// Add replace directive for local development
+replace github.com/BinLe1988/multi-agent-chatter => ./
 
 require (
 	github.com/gin-gonic/gin v1.9.1

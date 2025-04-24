@@ -2,16 +2,17 @@ package main
 
 import (
 	"log"
-	"multi-agent-chatter/api"
-	"multi-agent-chatter/config"
-	"multi-agent-chatter/database"
+
+	"github.com/BinLe1988/multi-agent-chatter/api"
+	"github.com/BinLe1988/multi-agent-chatter/configs"
+	"github.com/BinLe1988/multi-agent-chatter/database"
 
 	"github.com/gin-gonic/gin"
 )
 
 func main() {
 	// 加载配置
-	cfg, err := config.Load()
+	cfg, err := configs.Load()
 	if err != nil {
 		log.Fatalf("Failed to load config: %v", err)
 	}

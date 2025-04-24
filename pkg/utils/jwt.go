@@ -2,8 +2,9 @@ package utils
 
 import (
 	"errors"
-	"multi-agent-chatter/config"
 	"time"
+
+	"github.com/BinLe1988/multi-agent-chatter/configs"
 
 	"github.com/golang-jwt/jwt/v4"
 )
@@ -13,7 +14,7 @@ var jwtSecret string
 var jwtExpiration int
 
 // 初始化JWT配置
-func InitJWT(cfg config.JWT) {
+func InitJWT(cfg configs.JWT) {
 	jwtSecret = cfg.Secret
 	jwtExpiration = cfg.ExpiresIn
 }

@@ -4,8 +4,9 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
-	"multi-agent-chatter/config"
 	"net/http"
+
+	"github.com/BinLe1988/multi-agent-chatter/configs"
 )
 
 // AI相关配置
@@ -15,7 +16,7 @@ var (
 )
 
 // 初始化AI配置
-func InitConfig(cfg config.AI) {
+func InitConfig(cfg configs.AI) {
 	apiKey = cfg.APIKey
 	model = cfg.Model
 }

@@ -1,4 +1,4 @@
-package config
+package configs
 
 import (
 	"github.com/spf13/viper"
@@ -22,7 +22,7 @@ type Config struct {
 		Secret    string `mapstructure:"secret"`
 		ExpiresIn int    `mapstructure:"expires_in"` // 过期时间（小时）
 	} `mapstructure:"jwt"`
-	
+
 	AI struct {
 		APIKey string `mapstructure:"api_key"`
 		Model  string `mapstructure:"model"`

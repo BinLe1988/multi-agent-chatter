@@ -1,10 +1,11 @@
 package handlers
 
 import (
-	"multi-agent-chatter/database"
-	"multi-agent-chatter/models"
 	"net/http"
 	"time"
+
+	"github.com/BinLe1988/multi-agent-chatter/database"
+	"github.com/BinLe1988/multi-agent-chatter/models"
 
 	"github.com/gin-gonic/gin"
 )

@@ -3,8 +3,9 @@ package database
 import (
 	"fmt"
 	"log"
-	"multi-agent-chatter/config"
-	"multi-agent-chatter/models"
+
+	"github.com/BinLe1988/multi-agent-chatter/configs"
+	"github.com/BinLe1988/multi-agent-chatter/models"
 
 	"gorm.io/driver/mysql"
 	"gorm.io/driver/postgres"
@@ -14,7 +15,7 @@ import (
 var DB *gorm.DB
 
 // Initialize 初始化数据库连接
-func Initialize(dbConfig config.Database) error {
+func Initialize(dbConfig configs.Database) error {
 	var dsn string
 	var dialector gorm.Dialector
 

@@ -1,11 +1,12 @@
 package middleware
 
 import (
-	"multi-agent-chatter/database"
-	"multi-agent-chatter/models"
-	"multi-agent-chatter/pkg/utils"
 	"net/http"
 	"strings"
+
+	"github.com/BinLe1988/multi-agent-chatter/database"
+	"github.com/BinLe1988/multi-agent-chatter/models"
+	"github.com/BinLe1988/multi-agent-chatter/pkg/utils"
 
 	"github.com/gin-gonic/gin"
 )
