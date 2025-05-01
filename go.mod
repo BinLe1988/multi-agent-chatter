@@ -1,27 +1,18 @@
-module github.com/BinLe1988/multi-agent-chatter
+module multi-agent-chatter
 
 go 1.23.0
 
-// Add replace directive for local development
-replace (
-	github.com/BinLe1988/multi-agent-chatter => ./
-	github.com/BinLe1988/multi-agent-chatter/api => ./api
-	github.com/BinLe1988/multi-agent-chatter/configs => ./configs
-	github.com/BinLe1988/multi-agent-chatter/database => ./database
-	github.com/BinLe1988/multi-agent-chatter/models => ./models
-	github.com/BinLe1988/multi-agent-chatter/pkg/utils => ./pkg/utils
-)
-
 require (
+	github.com/BinLe1988/multi-agent-chatter v0.0.0-20250424085934-030cb29eb35b
 	github.com/gin-contrib/cors v1.7.5
 	github.com/gin-gonic/gin v1.10.0
-	github.com/golang-jwt/jwt/v4 v4.5.0
+	github.com/golang-jwt/jwt/v4 v4.5.2
 	github.com/google/uuid v1.3.1
 	github.com/spf13/viper v1.16.0
 	golang.org/x/crypto v0.36.0
-	gorm.io/driver/mysql v1.5.1
-	gorm.io/driver/postgres v1.5.2
-	gorm.io/gorm v1.25.4
+	gorm.io/driver/mysql v1.5.7
+	gorm.io/driver/postgres v1.5.11
+	gorm.io/gorm v1.25.10
 )
 
 require (
@@ -39,7 +30,8 @@ require (
 	github.com/hashicorp/hcl v1.0.0 // indirect
 	github.com/jackc/pgpassfile v1.0.0 // indirect
 	github.com/jackc/pgservicefile v0.0.0-20221227161230-091c0ba34f0a // indirect
-	github.com/jackc/pgx/v5 v5.4.3 // indirect
+	github.com/jackc/pgx/v5 v5.5.5 // indirect
+	github.com/jackc/puddle/v2 v2.2.1 // indirect
 	github.com/jinzhu/inflection v1.0.0 // indirect
 	github.com/jinzhu/now v1.1.5 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
@@ -60,6 +52,7 @@ require (
 	github.com/ugorji/go/codec v1.2.12 // indirect
 	golang.org/x/arch v0.15.0 // indirect
 	golang.org/x/net v0.38.0 // indirect
+	golang.org/x/sync v0.12.0 // indirect
 	golang.org/x/sys v0.31.0 // indirect
 	golang.org/x/text v0.23.0 // indirect
 	google.golang.org/protobuf v1.36.6 // indirect
