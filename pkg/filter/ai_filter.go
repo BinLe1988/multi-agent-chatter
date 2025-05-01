@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"net/http"
 	"strings"
+
+	"github.com/BinLe1988/multi-agent-chatter/pkg/filter/model"
 )
 
 // AIFilterResult AI过滤结果
@@ -37,15 +39,15 @@ func (f *AIFilter) SetAPIKey(apiKey string) {
 }
 
 // Analyze 分析内容
-func (f *AIFilter) Analyze(ctx context.Context, content string, contentType ContentType) (*AIFilterResult, error) {
+func (f *AIFilter) Analyze(ctx context.Context, content string, contentType model.ContentType) (*AIFilterResult, error) {
 	switch contentType {
-	case TextContent:
+	case model.ContentTypeText:
 		return f.analyzeText(ctx, content)
-	case ImageContent:
+	case model.ContentTypeImage:
 		return f.analyzeImage(ctx, content)
-	case AudioContent:
+	case model.ContentTypeAudio:
 		return f.analyzeAudio(ctx, content)
-	case VideoContent:
+	case model.ContentTypeVideo:
 		return f.analyzeVideo(ctx, content)
 	default:
 		return nil, fmt.Errorf("unsupported content type: %s", contentType)

@@ -4,7 +4,7 @@ import (
 	"math"
 	"sort"
 
-	"multi-agent-chatter/models"
+	"github.com/BinLe1988/multi-agent-chatter/models"
 )
 
 // MatchScore 表示匹配分数

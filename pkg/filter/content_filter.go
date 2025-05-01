@@ -6,16 +6,8 @@ import (
 	"regexp"
 	"strings"
 	"sync"
-)
 
-// ContentType 定义内容类型
-type ContentType string
-
-const (
-	TextContent  ContentType = "text"
-	ImageContent ContentType = "image"
-	AudioContent ContentType = "audio"
-	VideoContent ContentType = "video"
+	"github.com/BinLe1988/multi-agent-chatter/pkg/filter/model"
 )
 
 // FilterLevel 定义过滤级别
@@ -29,7 +21,7 @@ const (
 
 // ContentFilter 内容过滤器接口
 type ContentFilter interface {
-	Filter(ctx context.Context, content string, contentType ContentType) (bool, string, error)
+	Filter(ctx context.Context, content string, contentType model.ContentType) (bool, string, error)
 }
 
 // FilterResult 过滤结果
@@ -45,7 +37,7 @@ type FilterResult struct {
 type ContentFilterService struct {
 	sensitiveWords map[string]struct{}
 	regexPatterns  []*regexp.Regexp
-	aiFilter       *AIFilter
+	aiFilter       *model.AIFilter
 	level          FilterLevel
 	mu             sync.RWMutex
 }
@@ -55,7 +47,7 @@ func NewContentFilterService(level FilterLevel) *ContentFilterService {
 	return &ContentFilterService{
 		sensitiveWords: make(map[string]struct{}),
 		regexPatterns:  make([]*regexp.Regexp, 0),
-		aiFilter:       NewAIFilter(),
+		aiFilter:       model.NewAIFilter(),
 		level:          level,
 	}
 }
@@ -85,7 +77,7 @@ func (s *ContentFilterService) AddRegexPattern(pattern string) error {
 }
 
 // Filter 过滤内容
-func (s *ContentFilterService) Filter(ctx context.Context, content string, contentType ContentType) (*FilterResult, error) {
+func (s *ContentFilterService) Filter(ctx context.Context, content string, contentType model.ContentType) (*FilterResult, error) {
 	// 1. 基础敏感词过滤
 	if found, word := s.checkSensitiveWords(content); found {
 		return &FilterResult{
@@ -159,7 +151,7 @@ func (s *ContentFilterService) checkRegexPatterns(content string) (bool, string)
 }
 
 // shouldBlock 根据AI分析结果和过滤级别决定是否拦截
-func (s *ContentFilterService) shouldBlock(result *AIFilterResult) bool {
+func (s *ContentFilterService) shouldBlock(result *model.AIFilterResult) bool {
 	switch s.level {
 	case LevelLow:
 		return result.Score > 0.9

@@ -11,7 +11,7 @@ import (
 	"strings"
 	"time"
 
-	"multi-agent-chatter/pkg/filter/model"
+	"github.com/BinLe1988/multi-agent-chatter/pkg/filter/model"
 )
 
 // TencentProvider 腾讯云内容安全服务提供商
@@ -41,7 +41,7 @@ func NewTencentProvider(config ProviderConfig) (*TencentProvider, error) {
 		},
 		secretKey: config.APISecret,
 		region:    config.Region,
-		cache:     NewCacheManager("tencent", 24*time.Hour, 1000), // 24小时缓存时间，最多1000条记录
+		cache:     NewCacheManager(1000, 24*time.Hour), // 24小时缓存时间，最多1000条记录
 	}, nil
 }
 
@@ -102,8 +102,8 @@ func hmacSHA256(key []byte, data string) []byte {
 // AnalyzeText 实现文本分析
 func (p *TencentProvider) AnalyzeText(ctx context.Context, text string) (*AIFilterResult, error) {
 	// 检查缓存
-	if result := p.cache.Get(model.ContentTypeText, text); result != nil {
-		return result, nil
+	if result, found := p.cache.Get(model.ContentTypeText, text); found {
+		return result.(*AIFilterResult), nil
 	}
 
 	url := "https://tms.tencentcloudapi.com"
@@ -171,23 +171,20 @@ func (p *TencentProvider) AnalyzeText(ctx context.Context, text string) (*AIFilt
 	suggestions = append(suggestions, fmt.Sprintf("Suggestion: %s", result.Response.Suggestion))
 
 	// 缓存结果
-	p.cache.Set(model.ContentTypeText, text, &AIFilterResult{
+	filterResult := &AIFilterResult{
 		Score:       result.Response.Score,
 		Categories:  standardCategories,
 		Suggestions: suggestions,
-	})
-	return &AIFilterResult{
-		Score:       result.Response.Score,
-		Categories:  standardCategories,
-		Suggestions: suggestions,
-	}, nil
+	}
+	p.cache.Set(model.ContentTypeText, text, filterResult, 1024) // 估算大小为1KB
+	return filterResult, nil
 }
 
 // AnalyzeImage 实现图片分析
 func (p *TencentProvider) AnalyzeImage(ctx context.Context, imageURL string) (*AIFilterResult, error) {
 	// 检查缓存
-	if result := p.cache.Get(model.ContentTypeImage, imageURL); result != nil {
-		return result, nil
+	if result, found := p.cache.Get(model.ContentTypeImage, imageURL); found {
+		return result.(*AIFilterResult), nil
 	}
 
 	url := "https://ims.tencentcloudapi.com"
@@ -332,23 +329,20 @@ func (p *TencentProvider) AnalyzeImage(ctx context.Context, imageURL string) (*A
 	}
 
 	// 缓存结果
-	p.cache.Set(model.ContentTypeImage, imageURL, &AIFilterResult{
+	filterResult := &AIFilterResult{
 		Score:       maxScore / 100,
 		Categories:  standardCategories,
 		Suggestions: suggestions,
-	})
-	return &AIFilterResult{
-		Score:       maxScore / 100,
-		Categories:  standardCategories,
-		Suggestions: suggestions,
-	}, nil
+	}
+	p.cache.Set(model.ContentTypeImage, imageURL, filterResult, 1024)
+	return filterResult, nil
 }
 
 // AnalyzeAudio 实现音频分析
 func (p *TencentProvider) AnalyzeAudio(ctx context.Context, audioURL string) (*AIFilterResult, error) {
 	// 检查缓存
-	if result := p.cache.Get(model.ContentTypeAudio, audioURL); result != nil {
-		return result, nil
+	if result, found := p.cache.Get(model.ContentTypeAudio, audioURL); found {
+		return result.(*AIFilterResult), nil
 	}
 
 	url := "https://ams.tencentcloudapi.com"
@@ -520,23 +514,20 @@ func (p *TencentProvider) AnalyzeAudio(ctx context.Context, audioURL string) (*A
 	}
 
 	// 缓存结果
-	p.cache.Set(model.ContentTypeAudio, audioURL, &AIFilterResult{
+	filterResult := &AIFilterResult{
 		Score:       maxScore / 100,
 		Categories:  standardCategories,
 		Suggestions: suggestions,
-	})
-	return &AIFilterResult{
-		Score:       maxScore / 100,
-		Categories:  standardCategories,
-		Suggestions: suggestions,
-	}, nil
+	}
+	p.cache.Set(model.ContentTypeAudio, audioURL, filterResult, 1024)
+	return filterResult, nil
 }
 
 // AnalyzeVideo 实现视频分析
 func (p *TencentProvider) AnalyzeVideo(ctx context.Context, videoURL string) (*AIFilterResult, error) {
 	// 检查缓存
-	if result := p.cache.Get(model.ContentTypeVideo, videoURL); result != nil {
-		return result, nil
+	if result, found := p.cache.Get(model.ContentTypeVideo, videoURL); found {
+		return result.(*AIFilterResult), nil
 	}
 
 	url := "https://vms.tencentcloudapi.com"
@@ -746,14 +737,11 @@ func (p *TencentProvider) AnalyzeVideo(ctx context.Context, videoURL string) (*A
 	}
 
 	// 缓存结果
-	p.cache.Set(model.ContentTypeVideo, videoURL, &AIFilterResult{
+	filterResult := &AIFilterResult{
 		Score:       maxScore / 100,
 		Categories:  standardCategories,
 		Suggestions: suggestions,
-	})
-	return &AIFilterResult{
-		Score:       maxScore / 100,
-		Categories:  standardCategories,
-		Suggestions: suggestions,
-	}, nil
+	}
+	p.cache.Set(model.ContentTypeVideo, videoURL, filterResult, 1024)
+	return filterResult, nil
 }

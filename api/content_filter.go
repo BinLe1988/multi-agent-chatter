@@ -3,7 +3,8 @@ package api
 import (
 	"net/http"
 
-	"multi-agent-chatter/pkg/filter"
+	"github.com/BinLe1988/multi-agent-chatter/pkg/filter"
+	"github.com/BinLe1988/multi-agent-chatter/pkg/filter/model"
 
 	"github.com/gin-gonic/gin"
 )
@@ -33,8 +34,8 @@ func (h *ContentFilterHandler) RegisterRoutes(router *gin.Engine) {
 
 // CheckRequest 检查请求
 type CheckRequest struct {
-	Content     string             `json:"content" binding:"required"`
-	ContentType filter.ContentType `json:"content_type" binding:"required"`
+	Content     string            `json:"content" binding:"required"`
+	ContentType model.ContentType `json:"content_type" binding:"required"`
 }
 
 // CheckContent 检查内容

@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"multi-agent-chatter/pkg/filter/model"
+	"github.com/BinLe1988/multi-agent-chatter/pkg/filter/model"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -15,20 +15,20 @@ func TestBatchGet(t *testing.T) {
 
 	// 预先设置一些数据
 	items := []BatchSetItem{
-		{model.ContentTypeText, "key1", "value1", 100},
-		{model.ContentTypeImage, "key2", "value2", 200},
-		{model.ContentTypeAudio, "key3", "value3", 300},
-		{model.ContentTypeVideo, "key4", "value4", 400},
+		{ContentType: model.ContentTypeText, Content: "key1", Value: "value1", Size: 100},
+		{ContentType: model.ContentTypeImage, Content: "key2", Value: "value2", Size: 200},
+		{ContentType: model.ContentTypeAudio, Content: "key3", Value: "value3", Size: 300},
+		{ContentType: model.ContentTypeVideo, Content: "key4", Value: "value4", Size: 400},
 	}
 	cache.BatchSet(items)
 
 	// 测试批量获取
 	getItems := []BatchGetItem{
-		{model.ContentTypeText, "key1"},
-		{model.ContentTypeImage, "key2"},
-		{model.ContentTypeAudio, "key3"},
-		{model.ContentTypeVideo, "key4"},
-		{model.ContentTypeText, "nonexistent"}, // 不存在的键
+		{ContentType: model.ContentTypeText, Content: "key1"},
+		{ContentType: model.ContentTypeImage, Content: "key2"},
+		{ContentType: model.ContentTypeAudio, Content: "key3"},
+		{ContentType: model.ContentTypeVideo, Content: "key4"},
+		{ContentType: model.ContentTypeText, Content: "nonexistent"}, // 不存在的键
 	}
 
 	results := cache.BatchGet(getItems)
@@ -62,12 +62,12 @@ func TestBatchSet(t *testing.T) {
 
 	// 测试批量设置
 	items := []BatchSetItem{
-		{model.ContentTypeText, "key1", "value1", 100},
-		{model.ContentTypeImage, "key2", "value2", 200},
-		{model.ContentTypeAudio, "key3", "value3", 300},
-		{model.ContentTypeVideo, "key4", "value4", 400},
-		{model.ContentTypeText, "key5", "value5", 500},
-		{model.ContentTypeImage, "key6", "value6", 600}, // 超出容量
+		{ContentType: model.ContentTypeText, Content: "key1", Value: "value1", Size: 100},
+		{ContentType: model.ContentTypeImage, Content: "key2", Value: "value2", Size: 200},
+		{ContentType: model.ContentTypeAudio, Content: "key3", Value: "value3", Size: 300},
+		{ContentType: model.ContentTypeVideo, Content: "key4", Value: "value4", Size: 400},
+		{ContentType: model.ContentTypeText, Content: "key5", Value: "value5", Size: 500},
+		{ContentType: model.ContentTypeImage, Content: "key6", Value: "value6", Size: 600}, // 超出容量
 	}
 
 	// 记录被淘汰的条目
@@ -87,7 +87,7 @@ func TestBatchSet(t *testing.T) {
 	assert.Equal(t, 1, len(evicted)) // 应该有一个条目被淘汰
 
 	// 验证最新的条目仍在缓存中
-	result := cache.BatchGet([]BatchGetItem{{model.ContentTypeImage, "key6"}})
+	result := cache.BatchGet([]BatchGetItem{{ContentType: model.ContentTypeImage, Content: "key6"}})
 	assert.True(t, result["key6"].Found)
 
 	// 验证内存使用
@@ -99,15 +99,15 @@ func TestBatchOperationsWithExpiry(t *testing.T) {
 
 	// 设置测试数据
 	items := []BatchSetItem{
-		{model.ContentTypeText, "key1", "value1", 100},
-		{model.ContentTypeImage, "key2", "value2", 200},
+		{ContentType: model.ContentTypeText, Content: "key1", Value: "value1", Size: 100},
+		{ContentType: model.ContentTypeImage, Content: "key2", Value: "value2", Size: 200},
 	}
 	cache.BatchSet(items)
 
 	// 验证数据已设置
 	results := cache.BatchGet([]BatchGetItem{
-		{model.ContentTypeText, "key1"},
-		{model.ContentTypeImage, "key2"},
+		{ContentType: model.ContentTypeText, Content: "key1"},
+		{ContentType: model.ContentTypeImage, Content: "key2"},
 	})
 	assert.True(t, results["key1"].Found)
 	assert.True(t, results["key2"].Found)
@@ -117,8 +117,8 @@ func TestBatchOperationsWithExpiry(t *testing.T) {
 
 	// 验证数据已过期
 	results = cache.BatchGet([]BatchGetItem{
-		{model.ContentTypeText, "key1"},
-		{model.ContentTypeImage, "key2"},
+		{ContentType: model.ContentTypeText, Content: "key1"},
+		{ContentType: model.ContentTypeImage, Content: "key2"},
 	})
 	assert.False(t, results["key1"].Found)
 	assert.False(t, results["key2"].Found)
@@ -140,9 +140,9 @@ func TestBatchSetWithEviction(t *testing.T) {
 
 	// 第一批设置（填满缓存）
 	firstBatch := []BatchSetItem{
-		{model.ContentTypeText, "key1", "value1", 100},
-		{model.ContentTypeImage, "key2", "value2", 200},
-		{model.ContentTypeAudio, "key3", "value3", 300},
+		{ContentType: model.ContentTypeText, Content: "key1", Value: "value1", Size: 100},
+		{ContentType: model.ContentTypeImage, Content: "key2", Value: "value2", Size: 200},
+		{ContentType: model.ContentTypeAudio, Content: "key3", Value: "value3", Size: 300},
 	}
 	cache.BatchSet(firstBatch)
 
@@ -152,8 +152,8 @@ func TestBatchSetWithEviction(t *testing.T) {
 
 	// 第二批设置（触发淘汰）
 	secondBatch := []BatchSetItem{
-		{model.ContentTypeVideo, "key4", "value4", 400},
-		{model.ContentTypeText, "key5", "value5", 500},
+		{ContentType: model.ContentTypeVideo, Content: "key4", Value: "value4", Size: 400},
+		{ContentType: model.ContentTypeText, Content: "key5", Value: "value5", Size: 500},
 	}
 	cache.BatchSet(secondBatch)
 
@@ -164,16 +164,16 @@ func TestBatchSetWithEviction(t *testing.T) {
 
 	// 验证最新的条目在缓存中
 	results := cache.BatchGet([]BatchGetItem{
-		{model.ContentTypeVideo, "key4"},
-		{model.ContentTypeText, "key5"},
+		{ContentType: model.ContentTypeVideo, Content: "key4"},
+		{ContentType: model.ContentTypeText, Content: "key5"},
 	})
 	assert.True(t, results["key4"].Found)
 	assert.True(t, results["key5"].Found)
 
 	// 验证最旧的条目已被淘汰
 	results = cache.BatchGet([]BatchGetItem{
-		{model.ContentTypeText, "key1"},
-		{model.ContentTypeImage, "key2"},
+		{ContentType: model.ContentTypeText, Content: "key1"},
+		{ContentType: model.ContentTypeImage, Content: "key2"},
 	})
 	assert.False(t, results["key1"].Found)
 	assert.False(t, results["key2"].Found)

@@ -4,8 +4,8 @@ import (
 	"net/http"
 	"strconv"
 
-	"multi-agent-chatter/models"
-	"multi-agent-chatter/pkg/matching"
+	"github.com/BinLe1988/multi-agent-chatter/models"
+	"github.com/BinLe1988/multi-agent-chatter/pkg/matching"
 
 	"github.com/gin-gonic/gin"
 )

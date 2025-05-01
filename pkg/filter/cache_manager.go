@@ -3,11 +3,10 @@ package filter
 import (
 	"crypto/sha256"
 	"encoding/hex"
-	"sort"
 	"sync"
 	"time"
 
-	"multi-agent-chatter/pkg/filter/model"
+	"github.com/BinLe1988/multi-agent-chatter/pkg/filter/model"
 )
 
 // CacheStats 缓存统计信息
@@ -26,6 +25,12 @@ type CacheStats struct {
 
 	// 过期条目数量
 	ExpiredEntries int
+
+	// 命中次数
+	Hits int
+
+	// 未命中次数
+	Misses int
 
 	// 按内容类型统计
 	TypeStats map[model.ContentType]TypeStats
@@ -47,9 +52,10 @@ type CacheKey struct {
 // CacheEntry 缓存条目
 type CacheEntry struct {
 	Value       interface{}
-	Timestamp   time.Time
-	AccessCount int
 	Size        int64
+	Expiry      time.Time
+	LastAccess  time.Time
+	AccessCount int
 }
 
 // BatchResult 批量操作的结果
@@ -73,12 +79,20 @@ type BatchGetItem struct {
 	Content     string
 }
 
+// BatchGetResult 批量获取的结果
+type BatchGetResult struct {
+	Found bool
+	Value interface{}
+	Error error
+}
+
 // CacheManager 缓存管理器
 type CacheManager struct {
-	cache      map[string]CacheEntry
-	mutex      sync.RWMutex
-	maxEntries int
-	ttl        time.Duration
+	data             map[string]CacheEntry
+	maxEntries       int
+	ttl              time.Duration
+	mu               sync.RWMutex
+	evictionCallback func(string, CacheEntry)
 
 	// 统计信息
 	hits       int
@@ -89,13 +103,12 @@ type CacheManager struct {
 	// 监控相关
 	thresholds        map[string]float64
 	thresholdCallback func(CacheStats)
-	evictionCallback  func(string, CacheEntry)
 }
 
 // NewCacheManager 创建缓存管理器
 func NewCacheManager(maxEntries int, ttl time.Duration) *CacheManager {
 	cm := &CacheManager{
-		cache:      make(map[string]CacheEntry),
+		data:       make(map[string]CacheEntry),
 		maxEntries: maxEntries,
 		ttl:        ttl,
 		accessTime: make(map[string]float64),
@@ -114,48 +127,48 @@ func (cm *CacheManager) cleanupExpired() {
 	defer ticker.Stop()
 
 	for range ticker.C {
-		cm.mutex.Lock()
+		cm.mu.Lock()
 		now := time.Now()
-		for key, entry := range cm.cache {
-			if now.Sub(entry.Timestamp) > cm.ttl {
+		for key, entry := range cm.data {
+			if now.Sub(entry.Expiry) > cm.ttl {
 				if cm.evictionCallback != nil {
 					cm.evictionCallback(key, entry)
 				}
-				delete(cm.cache, key)
+				delete(cm.data, key)
 			}
 		}
-		cm.mutex.Unlock()
+		cm.mu.Unlock()
 	}
 }
 
 // SetThreshold 设置监控阈值
 func (cm *CacheManager) SetThreshold(name string, value float64) {
-	cm.mutex.Lock()
-	defer cm.mutex.Unlock()
+	cm.mu.Lock()
+	defer cm.mu.Unlock()
 	cm.thresholds[name] = value
 }
 
 // SetThresholdCallback 设置阈值告警回调
 func (cm *CacheManager) SetThresholdCallback(callback func(CacheStats)) {
-	cm.mutex.Lock()
-	defer cm.mutex.Unlock()
+	cm.mu.Lock()
+	defer cm.mu.Unlock()
 	cm.thresholdCallback = callback
 }
 
 // SetEvictionCallback 设置条目淘汰回调
 func (cm *CacheManager) SetEvictionCallback(callback func(string, CacheEntry)) {
-	cm.mutex.Lock()
-	defer cm.mutex.Unlock()
+	cm.mu.Lock()
+	defer cm.mu.Unlock()
 	cm.evictionCallback = callback
 }
 
 // GetStats 获取缓存统计信息
 func (cm *CacheManager) GetStats() CacheStats {
-	cm.mutex.RLock()
-	defer cm.mutex.RUnlock()
+	cm.mu.RLock()
+	defer cm.mu.RUnlock()
 
 	stats := CacheStats{
-		Size:      len(cm.cache),
+		Size:      len(cm.data),
 		TypeStats: make(map[model.ContentType]TypeStats),
 	}
 
@@ -165,7 +178,7 @@ func (cm *CacheManager) GetStats() CacheStats {
 	typeLatency := make(map[model.ContentType]float64)
 
 	// 计算各项统计
-	for key, entry := range cm.cache {
+	for key, entry := range cm.data {
 		totalSize += entry.Size
 
 		// 解析key获取内容类型
@@ -235,22 +248,22 @@ func (cm *CacheManager) parseKey(key string) *CacheKey {
 
 // Get 获取缓存条目
 func (cm *CacheManager) Get(contentType model.ContentType, content string) (interface{}, bool) {
-	cm.mutex.RLock()
-	defer cm.mutex.RUnlock()
+	cm.mu.RLock()
+	defer cm.mu.RUnlock()
 
 	key := cm.generateKey(contentType, content)
-	entry, ok := cm.cache[key]
+	entry, ok := cm.data[key]
 
 	// 更新统计信息
 	if ok {
 		cm.hits++
 		entry.AccessCount++
-		cm.cache[key] = entry
+		cm.data[key] = entry
 	} else {
 		cm.misses++
 	}
 
-	if ok && time.Since(entry.Timestamp) > cm.ttl {
+	if ok && time.Since(entry.Expiry) > cm.ttl {
 		return nil, false
 	}
 
@@ -259,55 +272,57 @@ func (cm *CacheManager) Get(contentType model.ContentType, content string) (inte
 
 // Set 设置缓存条目
 func (cm *CacheManager) Set(contentType model.ContentType, content string, value interface{}, size int64) {
-	cm.mutex.Lock()
-	defer cm.mutex.Unlock()
+	cm.mu.Lock()
+	defer cm.mu.Unlock()
 
 	key := cm.generateKey(contentType, content)
 
 	// 检查缓存大小
-	if len(cm.cache) >= cm.maxEntries {
+	if len(cm.data) >= cm.maxEntries {
 		cm.evictOldest()
 	}
 
 	// 创建新条目
 	entry := CacheEntry{
 		Value:       value,
-		Timestamp:   time.Now(),
-		AccessCount: 0,
 		Size:        size,
+		Expiry:      time.Now().Add(cm.ttl),
+		LastAccess:  time.Now(),
+		AccessCount: 0,
 	}
 
-	cm.cache[key] = entry
+	cm.data[key] = entry
 }
 
 // evictOldest 淘汰最旧的条目
 func (cm *CacheManager) evictOldest() {
 	var oldestKey string
 	var oldestTime time.Time
+	first := true
 
-	// 找到最旧的条目
-	for key, entry := range cm.cache {
-		if oldestKey == "" || entry.Timestamp.Before(oldestTime) {
+	for key, entry := range cm.data {
+		if first || entry.LastAccess.Before(oldestTime) {
 			oldestKey = key
-			oldestTime = entry.Timestamp
+			oldestTime = entry.LastAccess
+			first = false
 		}
 	}
 
 	// 如果找到了最旧的条目，删除它
 	if oldestKey != "" {
 		if cm.evictionCallback != nil {
-			cm.evictionCallback(oldestKey, cm.cache[oldestKey])
+			cm.evictionCallback(oldestKey, cm.data[oldestKey])
 		}
-		delete(cm.cache, oldestKey)
+		delete(cm.data, oldestKey)
 	}
 }
 
 // Clear 清空缓存
 func (cm *CacheManager) Clear() {
-	cm.mutex.Lock()
-	defer cm.mutex.Unlock()
+	cm.mu.Lock()
+	defer cm.mu.Unlock()
 
-	cm.cache = make(map[string]CacheEntry)
+	cm.data = make(map[string]CacheEntry)
 	cm.hits = 0
 	cm.misses = 0
 	cm.totalTime = 0
@@ -315,114 +330,46 @@ func (cm *CacheManager) Clear() {
 }
 
 // BatchGet 批量获取缓存条目
-func (cm *CacheManager) BatchGet(items []BatchGetItem) map[string]BatchResult {
-	cm.mutex.RLock()
-	defer cm.mutex.RUnlock()
-
-	results := make(map[string]BatchResult)
-	start := time.Now()
+func (cm *CacheManager) BatchGet(items []BatchGetItem) map[string]BatchGetResult {
+	results := make(map[string]BatchGetResult)
+	cm.mu.RLock()
+	defer cm.mu.RUnlock()
 
 	for _, item := range items {
-		key := cm.generateKey(item.ContentType, item.Content)
-		entry, ok := cm.cache[key]
-
-		if !ok {
-			cm.misses++
-			results[item.Content] = BatchResult{
+		key := item.Content
+		if entry, exists := cm.data[key]; exists && time.Now().Before(entry.Expiry) {
+			results[key] = BatchGetResult{
+				Found: true,
+				Value: entry.Value,
+			}
+		} else {
+			results[key] = BatchGetResult{
 				Found: false,
 			}
-			continue
-		}
-
-		// 检查是否过期
-		if time.Since(entry.Timestamp) > cm.ttl {
-			cm.misses++
-			results[item.Content] = BatchResult{
-				Found: false,
-			}
-			continue
-		}
-
-		// 更新访问统计
-		cm.hits++
-		entry.AccessCount++
-		cm.cache[key] = entry
-
-		results[item.Content] = BatchResult{
-			Value: entry.Value,
-			Found: true,
 		}
 	}
-
-	// 更新访问时间统计
-	elapsed := float64(time.Since(start).Milliseconds())
-	cm.totalTime += elapsed
-	for _, item := range items {
-		key := cm.generateKey(item.ContentType, item.Content)
-		cm.accessTime[key] = elapsed / float64(len(items))
-	}
-
 	return results
 }
 
 // BatchSet 批量设置缓存条目
-func (cm *CacheManager) BatchSet(items []BatchSetItem) map[string]error {
-	cm.mutex.Lock()
-	defer cm.mutex.Unlock()
+func (cm *CacheManager) BatchSet(items []BatchSetItem) []error {
+	cm.mu.Lock()
+	defer cm.mu.Unlock()
 
-	results := make(map[string]error)
-	now := time.Now()
-
-	// 预先计算需要淘汰的数量
-	needToEvict := len(cm.cache) + len(items) - cm.maxEntries
-	if needToEvict > 0 {
-		cm.evictBatch(needToEvict)
-	}
-
-	// 批量设置
+	var errors []error
 	for _, item := range items {
-		key := cm.generateKey(item.ContentType, item.Content)
-
 		entry := CacheEntry{
 			Value:       item.Value,
-			Timestamp:   now,
-			AccessCount: 0,
 			Size:        item.Size,
+			Expiry:      time.Now().Add(cm.ttl),
+			LastAccess:  time.Now(),
+			AccessCount: 0,
 		}
 
-		cm.cache[key] = entry
-	}
-
-	return results
-}
-
-// evictBatch 批量淘汰指定数量的条目
-func (cm *CacheManager) evictBatch(count int) {
-	type evictionCandidate struct {
-		key       string
-		timestamp time.Time
-	}
-
-	// 收集所有条目的时间戳
-	candidates := make([]evictionCandidate, 0, len(cm.cache))
-	for key, entry := range cm.cache {
-		candidates = append(candidates, evictionCandidate{
-			key:       key,
-			timestamp: entry.Timestamp,
-		})
-	}
-
-	// 按时间戳排序（最旧的在前面）
-	sort.Slice(candidates, func(i, j int) bool {
-		return candidates[i].timestamp.Before(candidates[j].timestamp)
-	})
-
-	// 淘汰指定数量的最旧条目
-	for i := 0; i < count && i < len(candidates); i++ {
-		key := candidates[i].key
-		if cm.evictionCallback != nil {
-			cm.evictionCallback(key, cm.cache[key])
+		if len(cm.data) >= cm.maxEntries {
+			cm.evictOldest()
 		}
-		delete(cm.cache, key)
+		cm.data[item.Content] = entry
 	}
+	return errors
 }

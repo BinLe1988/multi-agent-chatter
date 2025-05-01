@@ -8,8 +8,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/BinLe1988/multi-agent-chatter/pkg/filter/model"
 	"github.com/stretchr/testify/assert"
-	"github.com/your-org/multi-agent-chatter/pkg/filter/model"
 )
 
 func TestCacheMonitor(t *testing.T) {
@@ -177,10 +177,10 @@ func TestCacheMonitorThresholds(t *testing.T) {
 	// 验证告警内容
 	var foundMemoryAlert, foundHitRateAlert bool
 	for _, alert := range alerts {
-		if alert.Contains("High memory usage") {
+		if strings.Contains(alert, "High memory usage") {
 			foundMemoryAlert = true
 		}
-		if alert.Contains("Low hit rate") {
+		if strings.Contains(alert, "Low hit rate") {
 			foundHitRateAlert = true
 		}
 	}
@@ -205,9 +205,8 @@ func TestCacheMonitorEviction(t *testing.T) {
 
 	// 记录淘汰的条目
 	var evicted []string
-	var evictedEntries []CacheEntry
 	config.AlertCallback = func(alert string) {
-		if alert.Contains("Cache entry evicted") {
+		if strings.Contains(alert, "Cache entry evicted") {
 			parts := strings.Split(alert, "key=")
 			if len(parts) > 1 {
 				key := strings.Split(parts[1], ",")[0]

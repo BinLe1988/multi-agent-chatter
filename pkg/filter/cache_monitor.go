@@ -184,7 +184,7 @@ func (m *CacheMonitor) handleThresholdAlert(stats CacheStats) {
 // handleEviction 处理缓存条目淘汰
 func (m *CacheMonitor) handleEviction(key string, entry CacheEntry) {
 	m.logger.Printf("Cache entry evicted: key=%s, age=%.2fs, accesses=%d, size=%d bytes\n",
-		key, time.Since(entry.Timestamp).Seconds(), entry.AccessCount, entry.Size)
+		key, time.Since(entry.LastAccess).Seconds(), entry.AccessCount, entry.Size)
 }
 
 // alert 发送告警
